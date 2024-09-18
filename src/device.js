@@ -48,7 +48,9 @@ export class TorchDevice extends GObject.Object {
   }
 
   get name() {
-    return this.#udev_device.get_name();
+    const name = this.#udev_device.get_name().split(":")[0];
+    // Capitalize the name
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   }
 
   get on() {
