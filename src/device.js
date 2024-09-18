@@ -32,6 +32,15 @@ export class TorchDevice extends GObject.Object {
           0,
           GLib.MAXINT,
           0,
+          GObject.ParamFlags.READABLE,
+        ),
+        scaled_brightness: GObject.param_spec_double(
+          "scaled-brightness",
+          "Scaled Brightness",
+          "Scaled Brightness",
+          0,
+          1,
+          0,
           GObject.ParamFlags.READWRITE,
         ),
       },
@@ -163,6 +172,7 @@ export class TorchDevice extends GObject.Object {
     );
 
     this.notify("brightness");
+    this.notify("scaled-brightness");
     this.notify("on");
 
     this.thaw_notify();

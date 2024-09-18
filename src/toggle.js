@@ -1,11 +1,13 @@
 import Gio from "gi://Gio";
 import GObject from "gi://GObject";
 
+import { Slider } from "resource:///org/gnome/shell/ui/slider.js";
+import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import * as QuickSettings from "resource:///org/gnome/shell/ui/quickSettings.js";
 
 import { TORCH_DISABLED_ICON, TORCH_ENABLED_ICON } from "./constants.js";
 
-export class TorchToggle extends QuickSettings.QuickToggle {
+export class TorchToggle extends QuickSettings.QuickMenuToggle {
   bindings = [];
 
   /**
@@ -19,6 +21,20 @@ export class TorchToggle extends QuickSettings.QuickToggle {
     });
 
     this._device = device;
+
+    if (this._device.can_scale) {
+      this._sliderItem = new SliderItem();
+      this.menu.box.add_child(this._sliderItem);
+
+      this.bindings.push(
+        this._device.bind_property(
+          "scaled-brightness",
+          this._sliderItem._slider,
+          "value",
+          GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.BIDIRECTIONAL,
+        ),
+      );
+    }
 
     this.bindings.push(
       this._device.bind_property(
@@ -69,5 +85,35 @@ export class TorchToggle extends QuickSettings.QuickToggle {
 
   static {
     GObject.registerClass(this);
+  }
+}
+
+class SliderItem extends PopupMenu.PopupBaseMenuItem {
+  constructor() {
+    super({
+      activate: false,
+      style_class: "keyboard-brightness-item",
+    });
+
+    this._slider = new Slider(0);
+    this._slider.accessible_name = _("Torch Brightness");
+
+    this.add_child(this._slider);
+  }
+
+  static {
+    GObject.registerClass({
+      Properties: {
+        "value": GObject.ParamSpec.double(
+          "value",
+          "",
+          "",
+          GObject.ParamFlags.READWRITE,
+          0,
+          1,
+          0,
+        ),
+      },
+    }, this);
   }
 }
