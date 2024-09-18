@@ -4,16 +4,20 @@
 import GUdev from "gi://GUdev";
 
 import { TorchDevice } from "./device.js";
+import { TORCH_NAME_FILTERS, TORCH_SUBSYSTEMS } from "./constants.js";
 
 export function find_torch_devices() {
-  // const udev_client = GUdev.Client.new([TORCH_SUBSYSTEM]);
-  const udev_client = GUdev.Client.new([]);
+  const udev_client = GUdev.Client.new(TORCH_SUBSYSTEMS);
 
   const enumerator = GUdev.Enumerator.new(udev_client);
-  // enumerator.add_match_subsystem(TORCH_SUBSYSTEM);
-  // enumerator.add_match_name("*:torch");
-  // enumerator.add_match_name("*:flash");
-  enumerator.add_match_name("*_backlight");
+
+  for (const subsystem of TORCH_SUBSYSTEMS) {
+    enumerator.add_match_subsystem(subsystem);
+  }
+
+  for (const filter of TORCH_NAME_FILTERS) {
+    enumerator.add_match_name(filter);
+  }
 
   const device_list = enumerator.execute();
   if (device_list.length == 0) {
