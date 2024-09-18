@@ -43,12 +43,10 @@ export class TorchDevice extends GObject.Object {
   }
 
   get on() {
-    console.log("getting on");
     return !!this.brightness;
   }
 
   set on(value) {
-    console.log("setting on");
     this.toggle(value);
   }
 
