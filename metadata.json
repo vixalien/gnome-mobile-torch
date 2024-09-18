@@ -1,0 +1,7 @@
+{
+  "uuid": "torch@vixalien.com",
+  "name": "Torch",
+  "description": "Turn on/off the torch",
+  "shell-version": [ "46" ],
+  "url": "https://github.com/vixalien/gnome-shell-extension-torch"
+}
