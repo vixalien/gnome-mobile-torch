@@ -1,3 +1,4 @@
+import Gio from "gi://Gio";
 import GObject from "gi://GObject";
 
 import * as QuickSettings from "resource:///org/gnome/shell/ui/quickSettings.js";
@@ -10,11 +11,10 @@ export class TorchToggle extends QuickSettings.QuickToggle {
   /**
    * @param {import("./device.js").TorchDevice} device The Torch Device
    */
-  constructor(device, show_label = false) {
+  constructor({ device, show_label = false, cwd }) {
     super({
       title: _("Torch"),
       subtitle: show_label ? device.name : null,
-      icon_name: get_icon_name(device.brightness),
       toggle_mode: true,
     });
 
@@ -33,17 +33,33 @@ export class TorchToggle extends QuickSettings.QuickToggle {
       this._device.bind_property_full(
         "on",
         this,
-        "icon-name",
+        "gicon",
         GObject.BindingFlags.SYNC_CREATE,
         (_, brightness) => {
-          return [true, get_icon_name(brightness)];
+          return [true, this.get_gicon(cwd, brightness)];
         },
         null,
       ),
     );
   }
 
+  _gicon_cache = {};
+
+  get_gicon(cwd, brightness) {
+    const icon_name = brightness ? TORCH_ENABLED_ICON : TORCH_DISABLED_ICON;
+
+    if (!this._gicon_cache[icon_name]) {
+      return this._gicon_cache[icon_name] = Gio.icon_new_for_string(
+        `${cwd}/data/icons/${icon_name}.svg`,
+      );
+    }
+
+    return this._gicon_cache[icon_name];
+  }
+
   cleanup() {
+    this._gicon_cache = {};
+
     this.bindings.forEach((binding) => binding.unbind());
     this.bindings.length = 0;
 
@@ -54,8 +70,4 @@ export class TorchToggle extends QuickSettings.QuickToggle {
   static {
     GObject.registerClass(this);
   }
-}
-
-function get_icon_name(brightness) {
-  return brightness ? TORCH_ENABLED_ICON : TORCH_DISABLED_ICON;
 }

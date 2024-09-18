@@ -23,7 +23,7 @@ export default class TorchExtension extends Extension {
     const show_label = devices.length > 1;
 
     const toggles = devices.map((device) =>
-      new TorchToggle(device, show_label)
+      new TorchToggle({ device, show_label, cwd: this.metadata.path })
     );
     this._indicator = new TorchIndicator(toggles);
 
