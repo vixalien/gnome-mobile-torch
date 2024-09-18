@@ -10,10 +10,10 @@ export class TorchToggle extends QuickSettings.QuickToggle {
   /**
    * @param {import("./device.js").TorchDevice} device The Torch Device
    */
-  constructor(device) {
+  constructor(device, show_label = false) {
     super({
       title: _("Torch"),
-      subtitle: device.name,
+      subtitle: show_label ? device.name : null,
       icon_name: get_icon_name(device.brightness),
       toggle_mode: true,
     });

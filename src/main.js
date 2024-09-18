@@ -16,7 +16,15 @@ export default class TorchExtension extends Extension {
     console.debug(`enabling ${this.metadata.name}`);
 
     const devices = find_torch_devices();
-    const toggles = devices.map((device) => new TorchToggle(device));
+
+    if (devices.length == 0) return;
+
+    // only show the name of each torch when there are more than 1
+    const show_label = devices.length > 1;
+
+    const toggles = devices.map((device) =>
+      new TorchToggle(device, show_label)
+    );
     this._indicator = new TorchIndicator(toggles);
 
     Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
@@ -25,8 +33,10 @@ export default class TorchExtension extends Extension {
   disable() {
     console.debug(`disabling ${this.metadata.name}`);
 
-    this._indicator.cleanup();
-    this._indicator.destroy();
-    this._indicator = null;
+    if (this._indicator) {
+      this._indicator.cleanup();
+      this._indicator.destroy();
+      this._indicator = null;
+    }
   }
 }
