@@ -79,7 +79,7 @@ export class TorchToggle extends QuickSettings.QuickMenuToggle {
     this.bindings.forEach((binding) => binding.unbind());
     this.bindings.length = 0;
 
-    this._device.destroy();
+    // this._device.destroy();
     this._device = null;
   }
 
