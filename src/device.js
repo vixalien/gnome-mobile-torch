@@ -146,7 +146,7 @@ export class TorchDevice extends GObject.Object {
     Gio.DBusProxyFlags.NONE,
     null,
     "org.freedesktop.login1",
-    "/org/freedesktop/login1/session/self",
+    "/org/freedesktop/login1/session/auto",
     "org.freedesktop.login1.Session",
     null,
   );
