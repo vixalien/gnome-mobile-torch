@@ -2,7 +2,7 @@
   "uuid": "torch@vixalien.com",
   "name": "Torch",
   "description": "Turn on/off the torch",
-  "shell-version": ["46"],
+  "shell-version": ["46", "47", "48", "49"],
   "session-modes": ["user", "unlock-dialog"],
   "url": "https://github.com/vixalien/gnome-shell-extension-torch"
 }
