@@ -19,13 +19,10 @@ export default class TorchExtension extends Extension {
 
     if (devices.length == 0) return;
 
-    // only show the name of each torch when there are more than 1
-    const show_label = devices.length > 1;
-
-    const toggles = devices.map((device) =>
-      new TorchToggle({ device, show_label, cwd: this.metadata.path })
-    );
-    this._indicator = new TorchIndicator(toggles);
+    // A single tile controls all detected torches. Each torch gets its own
+    // labelled brightness slider in the expanded menu.
+    const toggle = new TorchToggle({ devices, cwd: this.metadata.path });
+    this._indicator = new TorchIndicator([toggle]);
 
     Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
   }
