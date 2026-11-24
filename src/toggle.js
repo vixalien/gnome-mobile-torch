@@ -1,5 +1,7 @@
 import Gio from "gi://Gio";
 import GObject from "gi://GObject";
+import Clutter from "gi://Clutter";
+import St from "gi://St";
 
 import { Slider } from "resource:///org/gnome/shell/ui/slider.js";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -9,53 +11,79 @@ import { TORCH_DISABLED_ICON, TORCH_ENABLED_ICON } from "./constants.js";
 
 export class TorchToggle extends QuickSettings.QuickMenuToggle {
   bindings = [];
+  _signal_handlers = [];
+  _syncing = false;
 
   /**
-   * @param {import("./device.js").TorchDevice} device The Torch Device
+   * @param {{ devices: import("./device.js").TorchDevice[], cwd: string }} options
    */
-  constructor({ device, show_label = false, cwd }) {
+  constructor({ devices, cwd }) {
     super({
       title: _("Torch"),
-      subtitle: show_label ? device.name : null,
       toggle_mode: true,
     });
 
-    this._device = device;
+    this._devices = devices;
+    this._cwd = cwd;
 
-    if (this._device.can_scale) {
-      this._sliderItem = new SliderItem();
-      this.menu.box.add_child(this._sliderItem);
+    // Add one labelled brightness slider per torch to the expanded menu.
+    for (const device of this._devices) {
+      if (!device.can_scale) continue;
+
+      const slider_item = new SliderItem(device.name);
+      this.menu.box.add_child(slider_item);
 
       this.bindings.push(
-        this._device.bind_property(
+        device.bind_property(
           "scaled-brightness",
-          this._sliderItem._slider,
+          slider_item._slider,
           "value",
           GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.BIDIRECTIONAL,
         ),
       );
     }
 
-    this.bindings.push(
-      this._device.bind_property(
-        "on",
-        this,
-        "checked",
-        GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.BIDIRECTIONAL,
-      ),
-    );
+    // The single tile reflects whether any of the torches is on.
+    for (const device of this._devices) {
+      this._signal_handlers.push([
+        device,
+        device.connect("notify::on", () => this._sync_checked()),
+      ]);
+    }
 
-    this.bindings.push(
-      this._device.bind_property_full(
-        "on",
-        this,
-        "gicon",
-        GObject.BindingFlags.SYNC_CREATE,
-        (_, brightness) => {
-          return [true, this.get_gicon(cwd, brightness)];
-        },
-        null,
-      ),
+    this._signal_handlers.push([
+      this,
+      this.connect("notify::checked", () => this._on_checked_changed()),
+    ]);
+
+    this._sync_checked();
+    this._sync_icon();
+  }
+
+  _sync_checked() {
+    if (this._syncing) return;
+
+    this._syncing = true;
+    this.checked = this._devices.some((device) => device.on);
+    this._syncing = false;
+  }
+
+  _on_checked_changed() {
+    if (this._syncing) return;
+
+    this._syncing = true;
+    this._devices.forEach((device) => {
+      device.on = this.checked;
+    });
+    this._syncing = false;
+
+    this._sync_icon();
+  }
+
+  _sync_icon() {
+    this.gicon = this.get_gicon(
+      this._cwd,
+      this._devices.some((device) => device.on),
     );
   }
 
@@ -65,9 +93,9 @@ export class TorchToggle extends QuickSettings.QuickMenuToggle {
     const icon_name = brightness ? TORCH_ENABLED_ICON : TORCH_DISABLED_ICON;
 
     if (!this._gicon_cache[icon_name]) {
-      return this._gicon_cache[icon_name] = Gio.icon_new_for_string(
+      return (this._gicon_cache[icon_name] = Gio.icon_new_for_string(
         `${cwd}/data/icons/${icon_name}.svg`,
-      );
+      ));
     }
 
     return this._gicon_cache[icon_name];
@@ -76,11 +104,16 @@ export class TorchToggle extends QuickSettings.QuickMenuToggle {
   cleanup() {
     this._gicon_cache = {};
 
+    this._signal_handlers.forEach(([object, handler_id]) => {
+      object.disconnect(handler_id);
+    });
+    this._signal_handlers.length = 0;
+
     this.bindings.forEach((binding) => binding.unbind());
     this.bindings.length = 0;
 
-    // this._device.destroy();
-    this._device = null;
+    // this._devices.forEach((device) => device.destroy());
+    this._devices = null;
   }
 
   static {
@@ -89,16 +122,31 @@ export class TorchToggle extends QuickSettings.QuickMenuToggle {
 }
 
 class SliderItem extends PopupMenu.PopupBaseMenuItem {
-  constructor() {
+  constructor(label) {
     super({
       activate: false,
       style_class: "keyboard-brightness-item",
     });
 
     this._slider = new Slider(0);
-    this._slider.accessible_name = _("Torch Brightness");
+    this._slider.accessible_name = _("%s Torch Brightness").format(label);
+    this._slider.x_expand = true;
 
-    this.add_child(this._slider);
+    const box = new St.BoxLayout({
+      x_expand: true,
+      style: "spacing: 8px;",
+    });
+
+    const label_actor = new St.Label({
+      text: label,
+      y_align: Clutter.ActorAlign.CENTER,
+      style: "min-width: 4em;",
+    });
+
+    box.add_child(label_actor);
+    box.add_child(this._slider);
+
+    this.add_child(box);
   }
 
   static {
